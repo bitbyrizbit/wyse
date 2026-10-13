@@ -92,3 +92,12 @@ Tiers are assigned by the server. No caller can set its own tier.
 4. Every decision records the claim revisions it used.
 5. Retraction changes how information is treated. It never erases the evidence that an incident occurred.
 6. A traversal that hit its depth limit reports itself as partial.
+
+
+## Traversal and atomicity notes
+
+- Dependency flow alternates direction. A premise is reached from a justification through REQUIRES, and a claim is reached from the same justification through JUSTIFIES, so impact discovery cannot be a single variable-length pattern. It runs as an application-driven walk, one level per query, which also produces depth bounds and truncation flags.
+- Identity-bearing nodes are created with separate MERGE clauses, followed by a MERGE on the relationship. Merging a whole path can duplicate endpoints.
+- Constraints are created through GRAPH.CONSTRAINT CREATE over an exact-match index, complete asynchronously, and are verified before the engine relies on them.
+- One modifying query is atomic, writers to a single graph are serialized, and readers see a consistent snapshot. Revision checks are compare-and-set operations inside one query. Retraction progress is stored on the Incident node, so it updates atomically without a second store.
+- Each behavior above is verified on the pinned server version before it is relied on.
