@@ -44,7 +44,7 @@ AI coding assistants are used in this project for design review, drafting, and c
 
 ## A note on the name
 
-WYSE is an independent open source project. It has no connection to any commercial hardware brand that shares the name.
+WYSE is an independent project. It is unrelated to any other product, company, or repository that uses the same or a similar name.
 
 ## License
 
