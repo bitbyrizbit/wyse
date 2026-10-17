@@ -101,3 +101,9 @@ Tiers are assigned by the server. No caller can set its own tier.
 - Constraints are created through GRAPH.CONSTRAINT CREATE over an exact-match index, complete asynchronously, and are verified before the engine relies on them.
 - One modifying query is atomic, writers to a single graph are serialized, and readers see a consistent snapshot. Revision checks are compare-and-set operations inside one query. Retraction progress is stored on the Incident node, so it updates atomically without a second store.
 - Each behavior above is verified on the pinned server version before it is relied on.
+
+## Governance additions
+
+- Source `incident_state` is CLEAR or QUARANTINED. A quarantined source stops grounding beliefs the moment the flag flips.
+- Incident carries a `target` property naming what it acted on and a `result` property holding the recorded impact as JSON. Retractions also link to their target through INVALIDATED.
+- Decision carries `acted`, which marks a consequential action, and `snapshot`, a JSON record of the claim revisions, statuses and root evidence at decision time.
