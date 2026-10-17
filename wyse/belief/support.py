@@ -12,6 +12,10 @@ LOAD_TIMEOUT_MS = 30_000
 BLOCKING_USE = ("QUARANTINED", "RESTRICTED")
 
 
+class PossibleTruncation(RuntimeError):
+    pass
+
+
 @dataclass
 class State:
     claims: dict[str, str]
