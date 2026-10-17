@@ -16,6 +16,7 @@ class Store:
             port=self.settings.port,
             password=self.settings.password,
         )
+        self._cap = None
 
     @property
     def connection(self):
@@ -28,6 +29,12 @@ class Store:
 
     def ping(self) -> bool:
         return bool(self.connection.ping())
+
+    def result_cap(self) -> int:
+        if self._cap is None:
+            reply = self.connection.execute_command("GRAPH.CONFIG", "GET", "RESULTSET_SIZE")
+            self._cap = int(reply[1])
+        return self._cap
 
     def run(self, tenant, cypher, params=None, *, readonly=False, timeout_ms=None):
         graph = self._db.select_graph(self.graph_name(tenant))

@@ -119,6 +119,8 @@ class Decision(Node):
     decided_at: int
     policy_version: str
     remediation: Remediation = Remediation.NO_ACTION_REQUIRED
+    acted: bool = False
+    snapshot: str = ""
 
 
 @dataclass
