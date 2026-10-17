@@ -36,12 +36,12 @@ Measured on the pinned build with `scripts/probe_falkordb.py`, `scripts/probe_li
    On a linear chain: depth 10 in 2 ms, depth 1000 in 2 ms, depth 5000 in 9 ms. Building the graph took 1.55 s. Branching graphs are not yet measured.
 
 7. **What happens at the result cap and at the timeout?**
-   Result: A 20,000-row match silently truncated to 10,000 rows, matching the RESULTSET_SIZE default with no error. A Cartesian query with a 500 ms timeout was terminated by the server with `Query timed out` at 0.50 s, raising `ResponseError`.
+   A query matching 20,000 nodes returned exactly 10,000 rows with no error and no warning, so truncation at the result cap is silent. A cross join given a 500 ms per-query timeout was aborted after 0.50 s with a ResponseError reading "Query timed out". Write queries are sent without a timeout.
 
 ## Consequences for the design
 
 - Revision checks are compare-and-set inside a single query. Read-modify-write is banned everywhere in the engine.
 - One query is the unit of atomicity. Multi-query operations record progress and must be safe to rerun.
 - Every traversal result is deduplicated with DISTINCT.
-- Loaders refuse to trust a result that sits at the row cap.
+- Bulk loads page with ORDER BY, SKIP and LIMIT, sized from the configured result cap, so no read ever lands on the cap.
 - The benchmark must include wide, branching dependency graphs, not only chains.
