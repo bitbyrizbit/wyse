@@ -132,4 +132,26 @@ class Incident(Node):
     result: str = ""
 
 
-ALL_NODES = (Source, Observation, Claim, Justification, Entity, Agent, Decision, Incident)
+@dataclass
+class Promotion(Node):
+    label: ClassVar[str] = "Promotion"
+    agent: str
+    scope: str
+    at: int
+    claims: str = ""
+
+
+@dataclass
+class Handoff(Node):
+    label: ClassVar[str] = "Handoff"
+    sender: str
+    receiver: str
+    at: int
+    note: str = ""
+    package: str = ""
+
+
+ALL_NODES = (
+    Source, Observation, Claim, Justification, Entity, Agent,
+    Decision, Incident, Promotion, Handoff,
+)

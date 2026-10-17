@@ -1,3 +1,4 @@
+import time
 import json
 from dataclasses import dataclass
 
@@ -198,23 +199,27 @@ def _persist(store: Store, tenant: str, state: State, result: Analysis) -> bool:
             return False
 
     flips = [
-        {"id": jid, "state": value}
+        {"id": jid, "old": state.justification_state.get(jid), "state": value}
         for jid, value in result.justification_state.items()
         if state.justification_state.get(jid) != value
     ]
     if flips:
-        store.write(
+        rows = store.write(
             tenant,
-            "UNWIND $rows AS r MATCH (j:Justification {id: r.id}) SET j.state = r.state",
+            "UNWIND $rows AS r MATCH (j:Justification {id: r.id}) WHERE j.state = r.old "
+            "SET j.state = r.state RETURN count(j) AS n",
             {"rows": flips},
         )
+        if rows[0]["n"] != len(flips):
+            return False
     return True
 
 
-def recompute(store: Store, tenant: str, attempts: int = 5) -> Analysis:
-    for _ in range(attempts):
+def recompute(store: Store, tenant: str, attempts: int = 10) -> Analysis:
+    for attempt in range(attempts):
         state = load_state(store, tenant)
         result = analyze(state)
         if _persist(store, tenant, state, result):
             return result
+        time.sleep(0.01 * (attempt + 1))
     raise RuntimeError("belief state kept changing during recompute")

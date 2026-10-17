@@ -6,7 +6,7 @@ from wyse.belief.justify import (
     PREMISE_PATTERN, attach, claim_id_for, ensure_premises_exist,
 )
 from wyse.belief.policy import (
-    MAX_CONTENT, MAX_FIELD, check_text, content_hash, normalize,
+    MAX_CONTENT, MAX_FIELD, check_text, content_hash, digest, normalize,
     source_id_for, tier_for_kind,
 )
 from wyse.belief.support import recompute
@@ -17,9 +17,10 @@ RECORD = """
 MERGE (s:Source {id: $sid})
   ON CREATE SET s.tenant = $tenant, s.kind = $kind, s.name = $name,
                 s.trust_tier = $tier, s.incident_state = 'CLEAR'
-CREATE (o:Observation {id: $oid, tenant: $tenant, content: $content,
-                       content_hash: $hash, observed_at: $observed, recorded_at: $now})
-CREATE (s)-[:CAPTURED_AS]->(o)
+MERGE (o:Observation {id: $oid})
+  ON CREATE SET o.tenant = $tenant, o.content = $content, o.content_hash = $hash,
+                o.observed_at = $observed, o.recorded_at = $now
+MERGE (s)-[:CAPTURED_AS]->(o)
 """
 
 PROPOSER = """
@@ -44,14 +45,17 @@ class Remembered(NamedTuple):
 
 def record_observation(
     store: Store, tenant: str, *, source_kind: str, source_name: str,
-    content: str, observed_at: int | None = None,
+    content: str, observed_at: int | None = None, operation_id: str | None = None,
 ) -> Recorded:
     kind = check_text("source_kind", source_kind, MAX_FIELD).lower()
     name = check_text("source_name", source_name, MAX_FIELD)
     body = check_text("content", content, MAX_CONTENT)
     now = now_ms()
     source_id = source_id_for(kind, name)
-    observation_id = new_id("obs")
+    if operation_id is None:
+        observation_id = new_id("obs")
+    else:
+        observation_id = "obs_" + digest(source_id, check_text("operation_id", operation_id, MAX_FIELD))
     store.write(
         tenant,
         RECORD,
@@ -112,9 +116,11 @@ def remember(
     store: Store, tenant: str, *, source_kind: str, source_name: str,
     content: str, subject: str, predicate: str, object: str,
     agent_id: str | None = None, exclusive: bool = True,
+    operation_id: str | None = None,
 ) -> Remembered:
     recorded = record_observation(
-        store, tenant, source_kind=source_kind, source_name=source_name, content=content,
+        store, tenant, source_kind=source_kind, source_name=source_name,
+        content=content, operation_id=operation_id,
     )
     claim_id = assert_claim(
         store, tenant, subject=subject, predicate=predicate, object=object,
