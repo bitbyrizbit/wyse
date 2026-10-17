@@ -2,6 +2,7 @@ import uuid
 
 import pytest
 
+from wyse.agents.scopes import open_scratch
 from wyse.db import Store
 from wyse.schema import ensure_schema, wait_for_constraints
 
@@ -33,3 +34,17 @@ def ready(store, tenant):
     ensure_schema(store, tenant)
     wait_for_constraints(store, tenant)
     return tenant
+
+
+@pytest.fixture
+def scratch(store, tenant):
+    opened = []
+
+    def open_for(agent):
+        scope = open_scratch(store, tenant, agent)
+        opened.append(scope)
+        return scope
+
+    yield open_for
+    for scope in opened:
+        store.drop(scope)
