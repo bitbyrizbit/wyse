@@ -2,6 +2,7 @@ from bench.baselines import Cascade, Plain
 from bench.metrics import score
 from bench.oracle import expected_flags, supported_claims
 from bench.scenarios import Decision, Proof, Scenario, generate
+from bench.wyse_system import Wyse
 
 
 def hand():
@@ -58,3 +59,45 @@ def test_baselines_fail_in_their_characteristic_ways():
     assert abs(c["preserved"] - 1 / 3) < 1e-9
     assert c["precision"] == 0.5
     assert abs(c["labelled"] - 1 / 3) < 1e-9
+
+
+def mirror_case():
+    return Scenario(
+        seed=0,
+        sources={"s1": "tool", "m_s1": "tool"},
+        mirrors={"s1": "m_s1"},
+        claims={"c0": [Proof(source="s1"), Proof(source="m_s1")]},
+        decisions=[Decision("d0", ("c0",), True)],
+        reported=["s1"],
+    )
+
+
+def run_wyse(store, scenario):
+    system = Wyse(store)
+    system.load(scenario)
+    try:
+        return score(scenario, system.compromise(scenario.reported))
+    finally:
+        system.close()
+
+
+def test_hidden_mirror_defeats_independence_but_not_cascade(store):
+    scenario = mirror_case()
+    cascade = Cascade()
+    cascade.load(scenario)
+    c = score(scenario, cascade.compromise(scenario.reported))
+    w = run_wyse(store, scenario)
+    assert w["leakage"] == 1.0
+    assert w["labelled"] == 0.0
+    assert c["leakage"] == 0.0
+    assert c["labelled"] == 1.0
+
+
+def test_wyse_matches_the_oracle_on_clean_scenarios(store):
+    for seed in range(3):
+        row = run_wyse(store, generate(seed, n_base=12, n_derived=8, n_decisions=6))
+        assert row["leakage"] in (0.0, None)
+        assert row["preserved"] in (1.0, None)
+        assert row["precision"] == 1.0
+        assert row["missed"] in (0.0, None)
+        assert row["labelled"] in (1.0, None)
