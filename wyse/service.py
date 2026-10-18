@@ -9,6 +9,7 @@ from wyse.db import Store
 from wyse.governance.asof import reassess as reassess_decision
 from wyse.governance.asof import recorded_context
 from wyse.governance.audit import explain_belief as explain
+from wyse.governance.blast import blast_radius
 from wyse.governance.decisions import record_decision as store_decision
 from wyse.governance.gateway import recall as read_memory
 from wyse.governance.impact import inspect_impact as preview_impact
@@ -90,11 +91,17 @@ class Service:
         self, source_id: str | None = None, observation_id: str | None = None,
         claim_id: str | None = None, scope: str = "shared",
     ) -> dict:
+        name = self._resolve(scope)
         impact = preview_impact(
-            self.store, self._resolve(scope),
+            self.store, name,
             source_id=source_id, observation_id=observation_id, claim_id=claim_id,
         )
-        return impact.as_dict()
+        out = impact.as_dict()
+        out["blast_radius"] = blast_radius(
+            self.store, name,
+            source_id=source_id, observation_id=observation_id, claim_id=claim_id,
+        )
+        return out
 
     def retract(self, claim_id: str, reason: str, scope: str = "private") -> dict:
         incident_id, impact = retract_claim(

@@ -82,6 +82,11 @@ def test_poisoned_page_story(make_service):
     assert sorted(i["claim_id"] for i in bob.recall()["usable"]) == both
 
     decision = bob.record_decision("closed invoice 104", [page["claim_id"]], acted=True)
+    preview = ops.inspect_impact(source_id=page["source_id"], scope="shared")
+    radius = preview["blast_radius"]
+    assert set(preview["fell"]) | set(preview["survived"]) <= set(radius["claims"])
+    assert set(preview["decisions"]) <= set(radius["decisions"])
+    assert radius["truncated"] is False
     impact = ops.quarantine(page["source_id"], "page was forged", scope="shared")["impact"]
     assert impact["fell"] == [orphan["claim_id"]]
     assert impact["survived"] == [page["claim_id"]]

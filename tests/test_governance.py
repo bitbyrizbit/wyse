@@ -4,6 +4,7 @@ from helpers import belief, fact
 from wyse.belief.ingest import assert_claim
 from wyse.governance.asof import reassess, recorded_context
 from wyse.governance.audit import explain_belief, list_incidents, observation_nodes
+from wyse.governance.blast import blast_radius
 from wyse.governance.decisions import UnusableClaims, record_decision
 from wyse.governance.gateway import recall
 from wyse.governance.impact import inspect_impact
@@ -168,3 +169,16 @@ def test_remediation_never_downgrades_across_incidents(store, ready):
     quarantine_source(store, ready, second.source_id, "second")
     row = store.read(ready, "MATCH (d:Decision {id: $id}) RETURN d.remediation AS r", {"id": decision})[0]
     assert row["r"] == "CORRECTION_REQUIRED"
+
+
+def test_blast_radius_follows_chains_and_terminates_on_cycles(store, ready):
+    base = fact(store, ready, "tool", "ledger", "x", "a", "p", "o")
+    b = assert_claim(store, ready, subject="b", predicate="p", object="o", evidence=[[base.claim_id]])
+    assert_claim(store, ready, subject="a", predicate="p", object="o", evidence=[[b]])
+    c = assert_claim(store, ready, subject="c", predicate="p", object="o", evidence=[[b]])
+    decision = record_decision(store, ready, agent_id="billing", summary="uses c", claim_ids=[c])
+    reach = blast_radius(store, ready, source_id=base.source_id)
+    assert reach["claims"] == sorted([base.claim_id, b, c])
+    assert reach["decisions"] == [decision]
+    assert reach["truncated"] is False
+
