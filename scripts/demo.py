@@ -1,4 +1,3 @@
-import os
 import argparse
 
 from wyse.db import Store
@@ -9,8 +8,6 @@ TENANT = "demo"
 
 
 def banner(text: str, auto: bool) -> None:
-    if not auto:
-        os.system("cls" if os.name == "nt" else "clear")
     print("\n" + "=" * 74)
     print(text)
     print("=" * 74)
