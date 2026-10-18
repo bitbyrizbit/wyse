@@ -106,4 +106,11 @@ Tiers are assigned by the server. No caller can set its own tier.
 
 - Source `incident_state` is CLEAR or QUARANTINED. A quarantined source stops grounding beliefs the moment the flag flips.
 - Incident carries a `target` property naming what it acted on and a `result` property holding the recorded impact as JSON. Retractions also link to their target through INVALIDATED.
-- Decision carries `acted`, which marks a consequential action, and `snapshot`, a JSON record of the claim revisions, statuses and root evidence at decision time.
+- Decision carries `acted`, which marks a consequential action, and `snapshot`, a JSON record of the claim revisions, statuses and root evidence at decision time.
+
+## Implementation status
+
+Implemented: the nodes Source, Observation, Claim, Justification, Decision, Agent, Incident, Promotion, and Handoff, and the edges CAPTURED_AS, REQUIRES, JUSTIFIES, CONTRADICTS, USED, MADE, PROPOSED, INVALIDATED, PROMOTED, and HANDED_OFF.
+
+Reserved and not yet used: the Entity node, the ABOUT and SUPERSEDES edges, and the STALE belief status.
+

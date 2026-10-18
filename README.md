@@ -29,6 +29,26 @@ When half the alternative proofs secretly mirror the compromised source, WYSE le
 
 Three agents citing one compromised email are one source, not three. Vote counting reports 10 where the truth is 1, and WYSE reports 1.
 
+## The graph data model
+
+```mermaid
+graph LR
+  Source -->|CAPTURED_AS| Observation
+  Justification -->|REQUIRES| Observation
+  Justification -->|REQUIRES| Claim
+  Justification -->|JUSTIFIES| Claim
+  Claim -->|CONTRADICTS| Claim
+  Decision -->|USED| Claim
+  Agent -->|MADE| Decision
+  Agent -->|PROPOSED| Claim
+  Incident -->|INVALIDATED| Claim
+  Incident -->|INVALIDATED| Observation
+  Promotion -->|PROMOTED| Claim
+  Agent -->|HANDED_OFF| Agent
+```
+
+Nodes: Source, Observation, Claim, Justification, Decision, Agent, Incident, Promotion, Handoff. Every node carries a tenant property, every tenant owns its own graph, and every agent owns a private scratch graph. A justification requires all of its premises, and several justifications can point at one claim, which is how joint (AND) and alternative (OR) support are told apart. Property tables are in [docs/DATA_MODEL.md](docs/DATA_MODEL.md).
+
 ## How FalkorDB carries the product
 
 The graph is the data model, and the product runs on it:
