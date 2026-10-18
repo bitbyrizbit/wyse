@@ -9,6 +9,14 @@ from wyse.models import Remediation
 LIVE = ("SUPPORTED", "CONTESTED")
 DEAD = ("UNSUPPORTED", "RETRACTED")
 
+SEVERITY = {
+    Remediation.NO_ACTION_REQUIRED: 0,
+    Remediation.UNRESOLVED: 1,
+    Remediation.REVIEW_REQUIRED: 2,
+    Remediation.CORRECTION_REQUIRED: 3,
+    Remediation.COMPENSATING_ACTION_REQUIRED: 4,
+}
+
 
 @dataclass
 class Impact:
@@ -88,12 +96,27 @@ def inspect_impact(
     return compare(state, before, after)
 
 
-def apply_remediation(store: Store, tenant: str, labels: dict[str, Remediation]) -> None:
-    if labels:
+def apply_remediation(
+    store: Store, tenant: str, labels: dict[str, Remediation], monotonic: bool = True
+) -> None:
+    rows = [{"id": key, "value": str(value)} for key, value in labels.items()]
+    if rows and monotonic:
+        current = store.read(
+            tenant,
+            "MATCH (d:Decision) WHERE d.id IN $ids RETURN d.id AS id, d.remediation AS value",
+            {"ids": [row["id"] for row in rows]},
+        )
+        held = {row["id"]: Remediation(row["value"]) for row in current}
+        rows = [
+            row for row in rows
+            if SEVERITY[Remediation(row["value"])]
+            > SEVERITY[held.get(row["id"], Remediation.NO_ACTION_REQUIRED)]
+        ]
+    if rows:
         store.write(
             tenant,
             "UNWIND $rows AS r MATCH (d:Decision {id: r.id}) SET d.remediation = r.value",
-            {"rows": [{"id": key, "value": str(value)} for key, value in labels.items()]},
+            {"rows": rows},
         )
 
 

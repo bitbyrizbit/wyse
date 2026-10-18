@@ -154,3 +154,17 @@ def test_unknown_targets_are_rejected_and_change_nothing(store, ready):
         quarantine_source(store, ready, "src_0000000000000000", "no such source")
     assert belief(store, ready, web.claim_id) == "SUPPORTED"
     assert list_incidents(store, ready) == []
+
+
+def test_remediation_never_downgrades_across_incidents(store, ready):
+    first = fact(store, ready, "web", "w1", "x", "e-1", "status", "ok")
+    second = fact(store, ready, "tool", "s1", "y", "e-2", "status", "ok")
+    fact(store, ready, "tool", "s2", "y again", "e-2", "status", "ok")
+    decision = record_decision(
+        store, ready, agent_id="billing", summary="uses both",
+        claim_ids=[first.claim_id, second.claim_id],
+    )
+    quarantine_source(store, ready, first.source_id, "first")
+    quarantine_source(store, ready, second.source_id, "second")
+    row = store.read(ready, "MATCH (d:Decision {id: $id}) RETURN d.remediation AS r", {"id": decision})[0]
+    assert row["r"] == "CORRECTION_REQUIRED"

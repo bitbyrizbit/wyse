@@ -53,7 +53,7 @@ def reassess(store: Store, tenant: str, decision_id: str, persist: bool = False)
     dead = recorded - analysis.grounded
     verdict = classify(decision, fallen, contested, dead)
     if persist:
-        apply_remediation(store, tenant, {decision_id: verdict})
+        apply_remediation(store, tenant, {decision_id: verdict}, monotonic=False)
     return {
         "decision_id": decision_id,
         "remediation": str(verdict),
